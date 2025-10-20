@@ -40,7 +40,7 @@ It recursively scans a specified source directory for files, compares each again
 
 3. Edit the script to set your source directory path:
 ```
-src_dir="$HOME/scripts" # or your preferred source directory
+src_dir="$HOME/Scripts" # or your preferred source directory
 dst_dir="$HOME/.local/bin"
 ```
 ---
@@ -59,7 +59,7 @@ This will:
 
 Sample output:
 
-`Updated /home/user/.local/bin/myscript.sh with /home/user/scripts/myscript.sh`
+`Updated /home/user/.local/bin/myscript.sh with /home/user/Scripts/myscript.sh`
 
 ---
 

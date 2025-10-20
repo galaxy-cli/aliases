@@ -10,7 +10,7 @@
 # binsync -  binsync is a Bash script that scans and updates my ~/scripts and ~/.local/bin directories
 
 dst_dir="$HOME/.local/bin"
-src_dir="$HOME/scripts"
+src_dir="$HOME/Scripts"
 
 # Recursively find all files in $src_dir
 find "$src_dir" -type f | while read -r src_file; do
