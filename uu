@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# 1. Self-Elevate: If not root, ask for sudo once and re-run
+if [ "$EUID" -ne 0 ]; then
+    exec sudo "$0" "$@"
+fi
+
+# 2. SAFETY TRAP: If CTRL+C is pressed, try to fix broken states
+trap 'echo -e "\n[!] Interrupted. Running emergency repair..."; 
+      dpkg --configure -a; 
+      exit 130' INT
+
+# 3. APT UPDATE (Wait up to 60s if locked)
+echo "[1/4] Refreshing package lists..."
+apt-get update -o DPkg::Lock::Timeout=60 || { echo "Update failed."; exit 1; }
+
+local_count=$(apt list --upgradable 2>/dev/null | grep -v "Listing..." | grep -c '/')
+
+if [ "$local_count" -gt 0 ]; then
+    echo "[2/4] Installing $local_count updates..."
+    # Non-interactive to prevent hanging on prompts
+    DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
+        -o Dpkg::Options::="--force-confdef" \
+        -o Dpkg::Options::="--force-confold" \
+        -o APT::Get::Always-Include-Phased-Updates=true && \
+    echo "[3/4] Cleaning up old packages..." && \
+    apt-get autoremove -y && \
+    apt-get autoclean
+else
+    echo "System is already up to date."
+fi
+
+# 4. FLATPAK (Run as the original user, not root)
+# We find the real user because flatpaks are often user-specific
+REAL_USER=${SUDO_USER:-$USER}
+if command -v flatpak >/dev/null 2>&1; then
+    echo "[4/4] Updating Flatpaks..."
+    sudo -u "$REAL_USER" flatpak update -y
+fi
+
+echo "Finished successfully."

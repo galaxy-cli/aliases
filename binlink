@@ -1,0 +1,13 @@
+#!/bin/bash
+# Safety check: ensure the bin directory exists
+for dir in "$HOME/Code"/*/ ; do
+    # Remove trailing slash and get folder name
+    folder_name=$(basename "$dir")
+    target_bin="${dir}${folder_name}"
+
+    if [ -x "$target_bin" ]; then
+        echo "Linking $folder_name..."
+        ln -sf "$target_bin" "$HOME/.local/bin/$folder_name"
+    fi
+done
+echo "Symlinks updated!"

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+case "$1" in
+    --pull)
+        shift
+        # Loop through immediate subdirectories
+        for d in */; do
+            if [ -d "$d/.git" ]; then
+                echo "--- Updating $d ---"
+                # -C tells git to run as if it were inside that directory
+                git -C "$d" pull "$@"
+            fi
+        done
+        ;;
+    --clone)
+        shift
+        # Define your standard repos here
+        REPOS=(
+            "git@github.com:galaxy-cli/brief.git"
+            "git@github.com:galaxy-cli/circuit.git"
+            "git@github.com:galaxy-cli/check.git"
+            "git@github.com:galaxy-cli/aliases.git"
+            "git@github.com:galaxy-cli/cloudsync.git"
+            "git@github.com:galaxy-cli/countdown.git"
+            "git@github.com:galaxy-cli/ftts.git"
+            "git@github.com:galaxy-cli/mpv3.git"
+            "git@github.com:galaxy-cli/pyqt5-browser.git"
+            "git@github.com:galaxy-cli/e-dig.git"
+            "git@github.com:galaxy-cli/income.git"
+            "git@github.com:galaxy-cli/pdftompv.git"
+        )
+        
+        mkdir -p ~/Code
+        cd ~/Code || exit
+        
+        for repo in "${REPOS[@]}"; do
+            git clone "$repo"
+        done
+        ;;
+    *)
+        echo "Usage: gitall --pull [git args] | gitall --clone"
+        exit 1
+        ;;
+esac

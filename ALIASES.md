@@ -1,49 +1,20 @@
-# bash aliases
-## ~/.bash_aliases
-```
-alias aliases="nano ~/.bash_aliases && source ~/.bash_aliases"
-```
-`nano` and source `~/.bash_aliases`
+# CLI Toolset Overview
 
-## uu
-``` 
-uu() {
-    sudo apt update
-    local count=$(apt list --upgradable 2>/dev/null | grep -v "Listing..." | grep -c '/')
-    if [ "$count" -gt 0 ]; then
-        sudo apt-get dist-upgrade -y -o APT::Get::Always-Include-Phased-Updates=true        
-        sudo apt autoremove -y
-        sudo apt autoclean
-    fi
-    flatpak update -y
-}
-```
-Update, upgrade, and remove
+## Shell Integration (`.bash_aliases`)
+- `aliases`: Quick-access command to edit your shortcut list and immediately refresh your terminal settings.
+- `go`: A navigation helper that jumps to folders inside ~/Code and automatically lists files upon arrival.
 
-## binlink 
-```
-binlink() {
-    for dir in ~/Code/*/ ; do
-        name=$(basename "$dir")
-        target_bin="$dir$name"
-        if [ -x "$target_bin" ]; then
-            ln -sf "$target_bin" "$~/.local/bin/$name"
-        fi
-    done
-    echo "Symlinks updated!"
-}
-```
-Symlink to `~/.local/bin`
-## go
-```
-go() {
-    if [ $# -eq 0 ]; then
-        cd ~
-    else
-        cd ~/"$1"
-    fi
-    ls 2>/dev/null
-}
+## Standalone Scripts (`~/.local/bin`)
+- `uu`: A safety-first update script for apt and flatpak. It handles root permissions automatically, prevents "half-installed" breakages if interrupted with CTRL+C, and waits for system locks.
+- `gitall`: A batch manager for your repositories.
+    - `--pull`: Updates every project in your current directory.
+    - `--clone`: Mass-clones your entire galaxy-cli ecosystem into a new environment.
+- `binlink`: The "glue" script. It scans your ~/Code directory for executable projects and symlinks them to your path so they work as global commands.
 
+## Installation Tip
+To get started, save the scripts into your git folder, then run:
 ```
-`cd` and `ls`
+chmod +x ~/path/to/scripts/*
+ln -s ~/path/to/scripts/binlink ~/.local/bin/binlink
+binlink
+```
