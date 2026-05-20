@@ -20,13 +20,13 @@ case "$1" in
             "git@github.com:galaxy-cli/circuit.git"
             "git@github.com:galaxy-cli/check.git"
             "git@github.com:galaxy-cli/aliases.git"
-            "git@github.com:galaxy-cli/cloudsync.git"
-            "git@github.com:galaxy-cli/countdown.git"
+            "git@github.com:galaxy-cli/xclone.git"
+            "git@github.com:galaxy-cli/countd.git"
             "git@github.com:galaxy-cli/ftts.git"
             "git@github.com:galaxy-cli/mpv3.git"
-            "git@github.com:galaxy-cli/pyqt5-browser.git"
+            "git@github.com:galaxy-cli/apex.git"
             "git@github.com:galaxy-cli/e-dig.git"
-            "git@github.com:galaxy-cli/income.git"
+            "git@github.com:galaxy-cli/pay.git"
             "git@github.com:galaxy-cli/pdftompv.git"
         )
         

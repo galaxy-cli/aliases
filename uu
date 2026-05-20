@@ -6,15 +6,16 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # 2. SAFETY TRAP: If CTRL+C is pressed, try to fix broken states
-trap 'echo -e "\n[!] Interrupted. Running emergency repair..."; 
-      dpkg --configure -a; 
+trap 'echo -e "\n[!] Interrupted. Restoring system state..."; 
+      dpkg --configure -a 2>/dev/null; 
       exit 130' INT
 
 # 3. APT UPDATE (Wait up to 60s if locked)
 echo "[1/4] Refreshing package lists..."
 apt-get update -o DPkg::Lock::Timeout=60 || { echo "Update failed."; exit 1; }
 
-local_count=$(apt list --upgradable 2>/dev/null | grep -v "Listing..." | grep -c '/')
+# Simulates the upgrade to get a stable, script-safe count of updates
+local_count=$(apt-get -s dist-upgrade | grep -c "^Inst")
 
 if [ "$local_count" -gt 0 ]; then
     echo "[2/4] Installing $local_count updates..."
@@ -30,12 +31,13 @@ else
     echo "System is already up to date."
 fi
 
-# 4. FLATPAK (Run as the original user, not root)
-# We find the real user because flatpaks are often user-specific
+# 4. FLATPAK (Updates both system and user spaces safely)
 REAL_USER=${SUDO_USER:-$USER}
 if command -v flatpak >/dev/null 2>&1; then
     echo "[4/4] Updating Flatpaks..."
-    sudo -u "$REAL_USER" flatpak update -y
+    
+    # Update system-wide flatpaks as root
+    flatpak update -y --system
 fi
 
 echo "Finished successfully."

@@ -1,13 +1,34 @@
 #!/bin/bash
-# Safety check: ensure the bin directory exists
-for dir in "$HOME/Code"/*/ ; do
-    # Remove trailing slash and get folder name
-    folder_name=$(basename "$dir")
-    target_bin="${dir}${folder_name}"
 
-    if [ -x "$target_bin" ]; then
-        echo "Linking $folder_name..."
-        ln -sf "$target_bin" "$HOME/.local/bin/$folder_name"
-    fi
-done
-echo "Symlinks updated!"
+# Exit if no file is provided
+if [ -z "$1" ]; then
+    echo "Error: Please provide a script path."
+    echo "Usage: binlink path/to/script.sh"
+    exit 1
+fi
+
+# Get absolute path of the target file
+TARGET_SRC=$(realpath "$1")
+
+# Check if the target file actually exists
+if [ ! -f "$TARGET_SRC" ]; then
+    echo "Error: File '$1' does not exist."
+    exit 1
+fi
+
+# Make the source file executable if it isn't already
+if [ ! -x "$TARGET_SRC" ]; then
+    echo "Making '$1' executable..."
+    chmod +x "$TARGET_SRC"
+fi
+
+# Extract the base filename for the symlink
+LINK_NAME=$(basename "$TARGET_SRC")
+DEST_DIR="$HOME/.local/bin"
+
+# Create the destination directory if missing
+mkdir -p "$DEST_DIR"
+
+# Create the symlink
+ln -sf "$TARGET_SRC" "$DEST_DIR/$LINK_NAME"
+echo "Success: Linked '$LINK_NAME' to $DEST_DIR/"
