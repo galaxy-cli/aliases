@@ -25,9 +25,10 @@ case "$1" in
             "git@github.com:galaxy-cli/ftts.git"
             "git@github.com:galaxy-cli/mpv3.git"
             "git@github.com:galaxy-cli/apex.git"
-            "git@github.com:galaxy-cli/e-dig.git"
+            "git@github.com:galaxy-cli/ytd.git"
             "git@github.com:galaxy-cli/pay.git"
             "git@github.com:galaxy-cli/pdftompv.git"
+            "git@github.com:galaxy-cli/hardening.git"
         )
         
         mkdir -p ~/Code
