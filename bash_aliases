@@ -1,4 +1,6 @@
 #!/bin/bash
+
+# ~/.bash_aliases
 cat << 'EOF' >> ~/.bash_aliases
 # aliases
 alias aliases="nano ~/.bash_aliases && source ~/.bash_aliases"
