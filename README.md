@@ -6,11 +6,11 @@
 
 ## Standalone Scripts (`~/.local/bin`)
 - `uu`: A safety-first update script for apt and flatpak. It handles root permissions automatically, prevents "half-installed" breakages if interrupted with CTRL+C, and waits for system locks.
-- `gitall`: A batch manager for your repositories.
+- `gitpull`: A batch manager for your repositories.
     - `--pull`: Updates every project in your current directory.
     - `--clone`: Mass-clones your entire galaxy-cli ecosystem into a new environment.
 - `binlink`: The "glue" script. It scans your ~/Code directory for executable projects and symlinks them to your path so they work as global commands.
-
+- `bash_aliases`: An automated script to add bash aliases
 ## Installation Tip
 To get started, save the scripts into your git folder, then run:
 ```
