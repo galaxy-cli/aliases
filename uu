@@ -1,32 +1,60 @@
 #!/bin/bash
 
+# 0. Make sure sudo actually exists before relying on it to elevate.
+if ! command -v sudo >/dev/null 2>&1; then
+    echo "[!] 'sudo' is required but was not found on this system." >&2
+    exit 1
+fi
+
 # 1. Self-Elevate: If not root, ask for sudo once and re-run
 if [ "$EUID" -ne 0 ]; then
     exec sudo "$0" "$@"
 fi
 
-# 2. SAFETY TRAP: If CTRL+C is pressed, try to fix broken states
-trap 'echo -e "\n[!] Interrupted. Restoring system state..."; 
-      dpkg --configure -a 2>/dev/null; 
-      exit 130' INT
+# 2. SAFETY TRAP: On interrupt OR termination, try to fix broken states
+cleanup() {
+    echo -e "\n[!] Interrupted. Restoring system state..."
+    dpkg --configure -a 2>/dev/null
+    exit 130
+}
+trap cleanup INT TERM
+
+# Shared apt options, as arrays so they survive word-splitting safely and
+# stay in exactly one place to edit.
+LOCK_OPTS=(-o DPkg::Lock::Timeout=60)
+PHASED_OPTS=(-o APT::Get::Always-Include-Phased-Updates=true)
+
+had_errors=0
 
 # 3. APT UPDATE (Wait up to 60s if locked)
 echo "[1/4] Refreshing package lists..."
-apt-get update -o DPkg::Lock::Timeout=60 || { echo "Update failed."; exit 1; }
+apt-get update "${LOCK_OPTS[@]}" || { echo "Update failed."; exit 1; }
 
-# Simulates the upgrade to get a stable, script-safe count of updates
-local_count=$(apt-get -s dist-upgrade | grep -c "^Inst")
+# Simulates the upgrade to get a stable, script-safe count of updates.
+# Uses the same phased-updates flag as the real upgrade below, so the
+# count and the actual upgrade always agree on what's pending. The
+# simulate step's own exit status is checked too, so a failure here
+# (e.g. a locked or broken apt state) isn't mistaken for "nothing to do."
+if ! simulate_output=$(apt-get -s dist-upgrade "${LOCK_OPTS[@]}" "${PHASED_OPTS[@]}"); then
+    echo "[!] Failed to simulate upgrade (is apt locked or broken?)." >&2
+    exit 1
+fi
+pending_count=$(grep -c "^Inst" <<< "$simulate_output")
 
-if [ "$local_count" -gt 0 ]; then
-    echo "[2/4] Installing $local_count updates..."
+if [ "$pending_count" -gt 0 ]; then
+    echo "[2/4] Installing $pending_count updates..."
     # Non-interactive to prevent hanging on prompts
-    DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y \
+    if DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y "${LOCK_OPTS[@]}" \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-        -o APT::Get::Always-Include-Phased-Updates=true && \
-    echo "[3/4] Cleaning up old packages..." && \
-    apt-get autoremove -y && \
-    apt-get autoclean
+        "${PHASED_OPTS[@]}"; then
+        echo "[3/4] Cleaning up old packages..."
+        apt-get autoremove -y "${LOCK_OPTS[@]}"
+        apt-get autoclean "${LOCK_OPTS[@]}"
+    else
+        echo "[!] Upgrade failed." >&2
+        had_errors=1
+    fi
 else
     echo "System is already up to date."
 fi
@@ -35,9 +63,30 @@ fi
 REAL_USER=${SUDO_USER:-$USER}
 if command -v flatpak >/dev/null 2>&1; then
     echo "[4/4] Updating Flatpaks..."
-    
+
     # Update system-wide flatpaks as root
-    flatpak update -y --system
+    flatpak update -y --system || had_errors=1
+
+    # Update the invoking user's own flatpak installs too -- running this
+    # as root would otherwise update root's own (unused) flatpak user
+    # install instead of the real user's.
+    #
+    # flatpak refuses any --user operation if it sees a SUDO_USER (or
+    # SUDO_UID/SUDO_GID/SUDO_COMMAND) variable in its environment, as a
+    # safety check against accidentally running --user commands as root.
+    # Those variables are still present here (set by this script's own
+    # earlier self-elevation), so they have to be explicitly stripped
+    # before calling flatpak, or it refuses to run even though sudo -u
+    # has already correctly dropped us to the real user.
+    if [ -n "$SUDO_USER" ]; then
+        sudo -u "$REAL_USER" env -u SUDO_USER -u SUDO_UID -u SUDO_GID -u SUDO_COMMAND \
+            flatpak update -y --user || had_errors=1
+    fi
+fi
+
+if [ "$had_errors" -eq 1 ]; then
+    echo "Finished with errors." >&2
+    exit 1
 fi
 
 echo "Finished successfully."

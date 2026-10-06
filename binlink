@@ -22,13 +22,33 @@ if [ ! -x "$TARGET_SRC" ]; then
     chmod +x "$TARGET_SRC"
 fi
 
-# Extract the base filename for the symlink
+# Extract the base filename for the symlink, stripping a trailing .sh
+# so e.g. foo.sh is linked as just 'foo'.
 LINK_NAME=$(basename "$TARGET_SRC")
+LINK_NAME="${LINK_NAME%.sh}"
 DEST_DIR="$HOME/.local/bin"
+DEST_PATH="$DEST_DIR/$LINK_NAME"
 
 # Create the destination directory if missing
 mkdir -p "$DEST_DIR"
 
+# Refuse to clobber something that isn't a symlink we created -- a real
+# file or binary already sitting at the destination shouldn't be silently
+# deleted just because a script of the same name happened to be linked.
+# Re-pointing an existing symlink (e.g. re-running binlink after editing
+# the source) is still allowed.
+if [ -e "$DEST_PATH" ] && [ ! -L "$DEST_PATH" ]; then
+    echo "Error: '$DEST_PATH' already exists and isn't a symlink. Refusing to overwrite." >&2
+    exit 1
+fi
+
 # Create the symlink
-ln -sf "$TARGET_SRC" "$DEST_DIR/$LINK_NAME"
+ln -sf "$TARGET_SRC" "$DEST_PATH"
 echo "Success: Linked '$LINK_NAME' to $DEST_DIR/"
+
+# Warn (don't fail) if the destination isn't actually on PATH, since the
+# link is useless to run by name until it is.
+case ":$PATH:" in
+    *":$DEST_DIR:"*) ;;
+    *) echo "Warning: $DEST_DIR is not in your \$PATH, so '$LINK_NAME' won't be runnable by name yet." >&2 ;;
+esac
