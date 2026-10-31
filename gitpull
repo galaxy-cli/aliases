@@ -26,9 +26,11 @@ case "$1" in
             "mpv3"
             "apex"
             "ytd"
-            "pay"
+            "earnings"
             "pdftompv"
             "hardening"
+            "routine"
+            "lean"
         )
 
         mkdir -p ~/Code
